@@ -14,7 +14,7 @@
 #include <linux/delay.h>
 #include <linux/kernel.h>
 
-#define I2C_BUS_AVAILABLE   (          2 )              // I2C Bus available in our Raspberry Pi
+#define I2C_BUS_AVAILABLE   (          1 )              // I2C Bus available in our Raspberry Pi
 #define SLAVE_DEVICE_NAME   ( "HFN_TCS34725" )          // Device and Driver Name
 #define TCS_SLAVE_ADDR  (       0x29 )              // SSD1306 OLED Slave Address
 
