@@ -14,49 +14,37 @@
 #include <linux/delay.h>
 #include <linux/kernel.h>
 
-#define I2C_BUS_AVAILABLE   (          1 )              // I2C Bus available in our Raspberry Pi
-#define SLAVE_DEVICE_NAME   ( "HFN_TCS34725" )          // Device and Driver Name
-#define TCS_SLAVE_ADDR  (       0x29 )              // SSD1306 OLED Slave Address
+#define I2C_BUS_AVAILABLE   (          1 )          // I2C Bus available in our Raspberry Pi
+#define SLAVE_DEVICE_NAME   ( "HFN_TCS34725" )      // Device and Driver Name
+#define TCS_SLAVE_ADDR      (       0x29 )          // Senor Address
+#define COMMAND_MASK  0x80
+#define REGISTER_ADDRESS_ID 0x12
+#define TCS34725_ID 0x44
 
 static struct i2c_adapter *hfn_i2c_adapter     = NULL;  // I2C Adapter Structure
 static struct i2c_client  *hfn_i2c_client_tcs = NULL;  // I2C Cient Structure (In our case it is OLED)
 
-/*
-** This function writes the data into the I2C client
-**
-**  Arguments:
-**      buff -> buffer to be sent
-**      len  -> Length of the data
-**
-*/
-static int I2C_Write(unsigned char *buf, unsigned int len)
+static int tcs_read_registers (struct i2c_client *client, uint8_t reg_addr, uint8_t *data, uint8_t length)
 {
-    /*
-    ** Sending Start condition, Slave address with R/W bit,
-    ** ACK/NACK and Stop condtions will be handled internally.
-    */
-    int ret = i2c_master_send(hfn_i2c_client_tcs, buf, len);
-
-    return ret;
+    uint8_t masked_address = reg_addr | COMMAND_MASK;
+    int rv = i2c_master_send(client, &masked_address, 1);
+    if (rv < 0) return rv;
+    rv = i2c_master_recv(client, data, length);
+    return rv;
 }
 
-/*
-** This function reads one byte of the data from the I2C client
-**
-**  Arguments:
-**      out_buff -> buffer wherer the data to be copied
-**      len      -> Length of the data to be read
-**
-*/
-static int I2C_Read(unsigned char *out_buf, unsigned int len)
+static int tcs_id_read(struct i2c_client *client)
 {
-    /*
-    ** Sending Start condition, Slave address with R/W bit,
-    ** ACK/NACK and Stop condtions will be handled internally.
-    */
-    int ret = i2c_master_recv(hfn_i2c_client_tcs, out_buf, len);
+    uint8_t read_id;
+    int rv = tcs_read_registers(client, REGISTER_ADDRESS_ID, &read_id, 1);
+    if (rv < 0) {
+        pr_info("Error reading sensor ID! \n");
+        return rv;
+    }
 
-    return ret;
+    pr_info("ID read: 0x%x \n", read_id);
+
+    return 0;
 }
 
 /*
@@ -66,10 +54,10 @@ static int I2C_Read(unsigned char *out_buf, unsigned int len)
 static int hfn_tcs_probe(struct i2c_client *client,
                          const struct i2c_device_id *id)
 {
+    int rv = tcs_id_read(client);
+    pr_info("TCS Sensor Probed!!!\n");
 
-    pr_info("Sensor Probed!!!\n");
-
-    return 0;
+    return rv;
 }
 
 /*
@@ -78,7 +66,7 @@ static int hfn_tcs_probe(struct i2c_client *client,
 */
 static void hfn_tcs_remove(struct i2c_client *client)
 {
-    pr_info("Sensor Removed!!!\n");
+    pr_info("TCS Sensor Removed!!!\n");
     return;
 }
 
@@ -132,7 +120,7 @@ static int __init hfn_driver_init(void)
         i2c_put_adapter(hfn_i2c_adapter);
     }
 
-    pr_info("Driver Added!!!\n");
+    pr_info("TCS Driver Added!!!\n");
     return ret;
 }
 
@@ -143,7 +131,7 @@ static void __exit hfn_driver_exit(void)
 {
     i2c_unregister_device(hfn_i2c_client_tcs);
     i2c_del_driver(&hfn_tcs_driver);
-    pr_info("Driver Removed!!!\n");
+    pr_info("TCS Driver Removed!!!\n");
 }
 
 module_init(hfn_driver_init);
