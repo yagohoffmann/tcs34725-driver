@@ -18,14 +18,14 @@
 #define SLAVE_DEVICE_NAME   ( "HFN_TCS34725" )      // Device and Driver Name
 #define TCS_SLAVE_ADDR      (       0x29 )          // Senor Address
 #define COMMAND_MASK  0x80
+#define REGISTER_ADDRESS_ENABLE 0x00
 #define REGISTER_ADDRESS_ID 0x12
 #define TCS34725_ID 0x44
 
 static struct i2c_adapter *hfn_i2c_adapter     = NULL;  // I2C Adapter Structure
 static struct i2c_client  *hfn_i2c_client_tcs = NULL;  // I2C Cient Structure (In our case it is OLED)
 
-static int tcs_read_registers (struct i2c_client *client, uint8_t reg_addr, uint8_t *data, uint8_t length)
-{
+static int tcs_read_registers (struct i2c_client *client, uint8_t reg_addr, uint8_t *data, uint8_t length) {
     uint8_t masked_address = reg_addr | COMMAND_MASK;
     int rv = i2c_master_send(client, &masked_address, 1);
     if (rv < 0) return rv;
@@ -33,8 +33,24 @@ static int tcs_read_registers (struct i2c_client *client, uint8_t reg_addr, uint
     return rv;
 }
 
-static int tcs_id_read(struct i2c_client *client)
-{
+static int tcs_write_registers (struct i2c_client *client, uint8_t reg_addr, uint8_t *data, uint8_t length) {
+    uint8_t masked_address = reg_addr | COMMAND_MASK;
+    int rv = i2c_master_send(client, &masked_address, 1);
+    if (rv < 0) return rv;
+    rv = i2c_master_send(client, data, length);
+    return rv;
+}
+
+static int tcs_init (struct i2c_client *client) {
+    uint8_t data = 0x01;
+    tcs_write_registers(client, REGISTER_ADDRESS_ENABLE, &data, 1);
+    usleep_range(2400,5000);
+    data = 0x02;
+    tcs_write_registers(client, REGISTER_ADDRESS_ENABLE, &data, 1);
+    return 0;
+}
+
+static int tcs_id_read(struct i2c_client *client) {
     uint8_t read_id;
     int rv = tcs_read_registers(client, REGISTER_ADDRESS_ID, &read_id, 1);
     if (rv < 0) {
@@ -51,10 +67,9 @@ static int tcs_id_read(struct i2c_client *client)
 ** This function getting called when the slave has been found
 ** Note : This will be called only once when we load the driver.
 */
-static int hfn_tcs_probe(struct i2c_client *client,
-                         const struct i2c_device_id *id)
-{
+static int hfn_tcs_probe(struct i2c_client *client, const struct i2c_device_id *id) {
     int rv = tcs_id_read(client);
+    tcs_init(client);
     pr_info("TCS Sensor Probed!!!\n");
 
     return rv;
@@ -64,8 +79,7 @@ static int hfn_tcs_probe(struct i2c_client *client,
 ** This function getting called when the slave has been removed
 ** Note : This will be called only once when we unload the driver.
 */
-static void hfn_tcs_remove(struct i2c_client *client)
-{
+static void hfn_tcs_remove(struct i2c_client *client) {
     pr_info("TCS Sensor Removed!!!\n");
     return;
 }
@@ -102,8 +116,7 @@ static struct i2c_board_info tcs_i2c_board_info = {
 /*
 ** Module Init function
 */
-static int __init hfn_driver_init(void)
-{
+static int __init hfn_driver_init(void) {
     int ret = -1;
     hfn_i2c_adapter     = i2c_get_adapter(I2C_BUS_AVAILABLE);
 
@@ -127,8 +140,7 @@ static int __init hfn_driver_init(void)
 /*
 ** Module Exit function
 */
-static void __exit hfn_driver_exit(void)
-{
+static void __exit hfn_driver_exit(void) {
     i2c_unregister_device(hfn_i2c_client_tcs);
     i2c_del_driver(&hfn_tcs_driver);
     pr_info("TCS Driver Removed!!!\n");
