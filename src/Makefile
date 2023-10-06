@@ -1,4 +1,4 @@
-obj-m += main.o
+obj-m += tcs_34725.o
 
 KDIR = /lib/modules/$(shell uname -r)/build
 
