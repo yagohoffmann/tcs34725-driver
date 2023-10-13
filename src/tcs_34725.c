@@ -180,22 +180,27 @@ static long hfn_tcs_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
     {
         case TCS_GET_RAW_COLORS:
             if (!tcs_rgb_data_read(hfn_i2c_client_tcs, &rgb_raw_data)) {
+                pr_err("Error reading raw data \n");
                 return -EFAULT;
             }
             if (copy_to_user((rgb_raw_data_t *)arg, &rgb_raw_data, sizeof(rgb_raw_data_t)))
             {
+                pr_err("Error copying data to user space \n");
                 return -EACCES;
             }
             break;
         case TCS_GET_RGB_COLORS:
             if (!tcs_rgb_data_read(hfn_i2c_client_tcs, &rgb_raw_data)) {
+                pr_err("Error reading raw data \n");
                 return -EFAULT;
             }
             if (!tcs_get_normalized_data(&rgb_raw_data, &rgb_norm_data)) {
+                pr_err("Error converting raw data to RGB \n");
                 return -EFAULT;
             }            
             if (copy_to_user((rgb_norm_data_t *)arg, &rgb_norm_data, sizeof(rgb_norm_data_t)))
             {
+                pr_err("Error copying data to user space \n");
                 return -EACCES;
             }
             break;
