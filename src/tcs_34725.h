@@ -8,7 +8,7 @@ typedef struct {
     int red_data;
     int green_data;
     int blue_data;
-} rgb_data_t;
+} rgb_raw_data_t;
 
 typedef struct {
     unsigned char red_data;
@@ -16,6 +16,7 @@ typedef struct {
     unsigned char blue_data;
 } rgb_norm_data_t;
 
-#define TCS_GET_COLORS _IOR('t', 1, rgb_data_t *)
+#define TCS_GET_RAW_COLORS _IOR('t', 1, rgb_raw_data_t *)
+#define TCS_GET_RGB_COLORS _IOR('t', 2, rgb_norm_data_t *)
 
 #endif // TCS_34725_H

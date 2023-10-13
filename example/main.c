@@ -8,7 +8,8 @@
 #include "../src/tcs_34725.h"
 
 int main() {
-    rgb_data_t data;
+    rgb_raw_data_t raw_data;
+    rgb_norm_data_t rgb_norm_data;
     int fd = open("/dev/tcs34725", O_RDWR);
 
     if (fd < 0) {
@@ -16,17 +17,28 @@ int main() {
         return errno;
     }
 
-    if (ioctl(fd, TCS_GET_COLORS, &data) == -1) {
-        perror("TCS_GET_COLORS failed");
+    if (ioctl(fd, TCS_GET_RAW_COLORS, &raw_data) == -1) {
+        perror("TCS_GET_RAW_COLORS failed");
         close(fd);
         return errno;
     }
 
-    printf("Colors read from kernel: \n");
-    printf("Clear: %d\n", data.clear_data);
-    printf("Read: %d\n", data.red_data);
-    printf("Green: %d\n", data.green_data);
-    printf("Blue: %d\n", data.blue_data);
+    if (ioctl(fd, TCS_GET_RGB_COLORS, &rgb_norm_data) == -1) {
+        perror("TCS_GET_RGB_COLORS failed");
+        close(fd);
+        return errno;
+    }
+
+    printf("Raw colors read from sensor: \n");
+    printf("Clear: %d\n", raw_data.clear_data);
+    printf("Read: %d\n", raw_data.red_data);
+    printf("Green: %d\n", raw_data.green_data);
+    printf("Blue: %d\n", raw_data.blue_data);
+
+    printf("RGB colors read from sensor: \n");
+    printf("Read: %d\n", rgb_norm_data.red_data);
+    printf("Green: %d\n", rgb_norm_data.green_data);
+    printf("Blue: %d\n", rgb_norm_data.blue_data);
 
     close(fd);
     return 0;
