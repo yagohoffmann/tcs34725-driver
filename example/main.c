@@ -31,12 +31,12 @@ int main() {
 
     printf("Raw colors read from sensor: \n");
     printf("Clear: %d\n", raw_data.clear_data);
-    printf("Read: %d\n", raw_data.red_data);
+    printf("Red: %d\n", raw_data.red_data);
     printf("Green: %d\n", raw_data.green_data);
     printf("Blue: %d\n", raw_data.blue_data);
 
     printf("RGB colors read from sensor: \n");
-    printf("Read: %d\n", rgb_norm_data.red_data);
+    printf("Red: %d\n", rgb_norm_data.red_data);
     printf("Green: %d\n", rgb_norm_data.green_data);
     printf("Blue: %d\n", rgb_norm_data.blue_data);
 

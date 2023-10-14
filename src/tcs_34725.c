@@ -1,7 +1,7 @@
 /***************************************************************************//**
-*  \file       main.c
+*  \file       tcs_34725.c
 *
-*  \details    Simple I2C driver for TCS
+*  \details    Simple I2C driver for TCS 34725 RGB color sensor
 *
 *  \author     Yago Hoffmann
 *
@@ -46,22 +46,33 @@ static struct cdev c_dev;
 static struct class *cl;
 
 // Look-up table used to apply a gamma of 2.5 to the read data ( y = x ^ 1/2.5 )
-int gamma_lut[256] = { 0, 27, 36, 43, 48, 52, 56, 60, 63, 66, 69, 72, 75, 77, 79, 82, 84, 86, 88, 90, 92, 93, 95,
-                       97, 99, 100, 102, 103, 105, 106, 108, 109, 111, 112, 113, 115, 116, 117, 119, 120, 121, 122,
-                       123, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 136, 137, 138, 139, 140, 141, 141,
-                       142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 152, 153, 154, 155, 156, 157, 157,
-                       158, 159, 160, 161, 161, 162, 163, 164, 165, 165, 166, 167, 168, 168, 169, 170, 171, 171,
-                       172, 173, 173, 174, 175, 176, 176, 177, 178, 178, 179, 180, 180, 181, 182, 182, 183, 184,
-                       184, 185, 186, 186, 187, 187, 188, 189, 189, 190, 191, 191, 192, 192, 193, 194, 194, 195,
-                       195, 196, 197, 197, 198, 198, 199, 200, 200, 201, 201, 202, 202, 203, 204, 204, 205, 205,
-                       206, 206, 207, 207, 208, 208, 209, 210, 210, 211, 211, 212, 212, 213, 213, 214, 214, 215,
-                       215, 216, 216, 217, 217, 218, 218, 219, 219, 220, 220, 221, 221, 222, 222, 223, 223, 224,
-                       224, 225, 225, 226, 226, 227, 227, 228, 228, 229, 229, 229, 230, 230, 231, 231, 232, 232,
-                       233, 233, 234, 234, 235, 235, 235, 236, 236, 237, 237, 238, 238, 239, 239, 239, 240, 240,
-                       241, 241, 242, 242, 242, 243, 243, 244, 244, 245, 245, 245, 246, 246, 247, 247, 248, 248,
-                       248, 249, 249, 250, 250, 250, 251, 251, 252, 252, 252, 253, 253, 254, 254 };
+int gamma_lut[256] = { 0, 27, 36, 43, 48, 52, 56, 60, 63, 66, 69, 72, 75, 77, 79, 82, 84, 86, 88,
+                       90, 92, 93, 95, 97, 99, 100, 102, 103, 105, 106, 108, 109, 111, 112, 113,
+                       115, 116, 117, 119, 120, 121, 122, 123, 125, 126, 127, 128, 129, 130, 131,
+                       132, 133, 134, 136, 137, 138, 139, 140, 141, 141, 142, 143, 144, 145, 146,
+                       147, 148, 149, 150, 151, 152, 152, 153, 154, 155, 156, 157, 157, 158, 159,
+                       160, 161, 161, 162, 163, 164, 165, 165, 166, 167, 168, 168, 169, 170, 171,
+                       171, 172, 173, 173, 174, 175, 176, 176, 177, 178, 178, 179, 180, 180, 181,
+                       182, 182, 183, 184, 184, 185, 186, 186, 187, 187, 188, 189, 189, 190, 191,
+                       191, 192, 192, 193, 194, 194, 195, 195, 196, 197, 197, 198, 198, 199, 200,
+                       200, 201, 201, 202, 202, 203, 204, 204, 205, 205, 206, 206, 207, 207, 208,
+                       208, 209, 210, 210, 211, 211, 212, 212, 213, 213, 214, 214, 215, 215, 216,
+                       216, 217, 217, 218, 218, 219, 219, 220, 220, 221, 221, 222, 222, 223, 223,
+                       224, 224, 225, 225, 226, 226, 227, 227, 228, 228, 229, 229, 229, 230, 230,
+                       231, 231, 232, 232, 233, 233, 234, 234, 235, 235, 235, 236, 236, 237, 237,
+                       238, 238, 239, 239, 239, 240, 240, 241, 241, 242, 242, 242, 243, 243, 244,
+                       244, 245, 245, 245, 246, 246, 247, 247, 248, 248, 248, 249, 249, 250, 250,
+                       250, 251, 251, 252, 252, 252, 253, 253, 254, 254 };
 
-static int tcs_read_registers (struct i2c_client *client, uint8_t reg_addr, uint8_t *data, uint8_t length) {
+/**
+ * \brief Read registers from sensor by address
+ * \param *client   Pointer to i2_client structure with device info
+ * \param reg_addr  Address of the first address to be read
+ * \param *data     Array were the read data will be writen
+ * \param length    Number of registers to be read
+*/
+static int tcs_read_registers (struct i2c_client *client, uint8_t reg_addr, uint8_t *data,
+                               uint8_t length) {
     uint8_t masked_address = reg_addr | COMMAND_MASK;
     int rv = i2c_master_send(client, &masked_address, 1);
     if (rv < 0) {
@@ -71,7 +82,15 @@ static int tcs_read_registers (struct i2c_client *client, uint8_t reg_addr, uint
     return rv;
 }
 
-static int tcs_write_registers (struct i2c_client *client, uint8_t reg_addr, uint8_t *data, uint8_t length) {
+/**
+ * \brief Write registers to sensor by address
+ * \param *client   Pointer to i2_client structure with device info
+ * \param reg_addr  Address of the first address to be writen
+ * \param *data     Array with the data tha will be writen to device
+ * \param length    Number of registers to be writen
+*/
+static int tcs_write_registers (struct i2c_client *client, uint8_t reg_addr, uint8_t *data,
+                                uint8_t length) {
     uint8_t write_buffer[MAXIMUM_WRITE_SIZE];
     int i, rv;
     for (i = 0; i < length; i++) {
@@ -82,6 +101,10 @@ static int tcs_write_registers (struct i2c_client *client, uint8_t reg_addr, uin
     return rv;
 }
 
+/**
+ * \brief This function will power on the sensor and enable the cyclic readings
+ * \param *client  Pointer to i2_client structure with device info
+*/
 static int tcs_init (struct i2c_client *client) {
     // Set PON bit
     uint8_t data = 0x01;
@@ -93,17 +116,24 @@ static int tcs_init (struct i2c_client *client) {
     // The sensor needs a time delay between power on (PON bit) and RGBC enable (AEN bit)
     usleep_range(2400,5000);
 
-    // Set AEN bit
+    // Set AEN bit and keep PON bit set
     data |= 0x02;
     rv = tcs_write_registers(client, REGISTER_ADDRESS_ENABLE, &data, 1);
     if (rv < 0) {
         pr_err("RGBC enable failed!\n");
         return rv;
     }
+    // Wait at least mor 2.4ms to do the first readings
     usleep_range(2400,5000);
     return 0;
 }
 
+/**
+ * \brief Read sensor ID register and verify if it matches the value specified on datasheet for this
+ *        model.
+ * \param   *client  Pointer to i2_client structure with device info
+ * \return  Return 0 if the ID matches the expected or -1 if it couldn't be read or is different.
+*/
 static int tcs_id_read(struct i2c_client *client) {
     uint8_t read_id;
     int rv = tcs_read_registers(client, REGISTER_ADDRESS_ID, &read_id, 1);
@@ -111,10 +141,20 @@ static int tcs_id_read(struct i2c_client *client) {
         pr_err("Error reading sensor ID!\n");
         return rv;
     }
-    pr_info("ID read: 0x%x \n", read_id);
+    if (read_id != TCS34725_ID) {
+        pr_err("Sensor ID doesn't match expected for TCS34725! Expected: 0x%x Read: 0x%x\n",
+                TCS34725_ID, read_id);
+        return -1;
+    }
     return 0;
 }
 
+/**
+ * \brief Read raw color data from sensor
+ * \param *client  Pointer to i2_client structure with device info
+ * \param *data    rgb_raw_data_t structure where read values will be stored
+ * \return Return 0 if the data was correctly read or negative error number if it fails
+*/
 static int tcs_rgb_data_read (struct i2c_client *client, rgb_raw_data_t *data) {
     uint8_t raw_data[8];
     int rv;
@@ -130,7 +170,7 @@ static int tcs_rgb_data_read (struct i2c_client *client, rgb_raw_data_t *data) {
     return 0;
 }
 
-static int tcs_get_normalized_data (rgb_raw_data_t *in_data, rgb_norm_data_t *out_data) {
+static int tcs_convert_to_normalized_data (rgb_raw_data_t *in_data, rgb_norm_data_t *out_data) {
     int tmp_red;
     int tmp_green;
     int tmp_blue;
@@ -162,15 +202,6 @@ static int tcs_get_normalized_data (rgb_raw_data_t *in_data, rgb_norm_data_t *ou
     return 0;
 }
 
-static int hfn_tcs_open(struct inode *i, struct file *f)
-{
-    return 0;
-}
-static int hfn_tcs_close(struct inode *i, struct file *f)
-{
-    return 0;
-}
-
 static long hfn_tcs_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
     rgb_raw_data_t rgb_raw_data;
@@ -179,7 +210,8 @@ static long hfn_tcs_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
     switch (cmd)
     {
         case TCS_GET_RAW_COLORS:
-            if (!tcs_rgb_data_read(hfn_i2c_client_tcs, &rgb_raw_data)) {
+        
+            if (tcs_rgb_data_read(hfn_i2c_client_tcs, &rgb_raw_data) != 0) {
                 pr_err("Error reading raw data \n");
                 return -EFAULT;
             }
@@ -190,18 +222,18 @@ static long hfn_tcs_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
             }
             break;
         case TCS_GET_RGB_COLORS:
-            if (!tcs_rgb_data_read(hfn_i2c_client_tcs, &rgb_raw_data)) {
+            if (tcs_rgb_data_read(hfn_i2c_client_tcs, &rgb_raw_data) != 0) {
                 pr_err("Error reading raw data \n");
                 return -EFAULT;
             }
-            if (!tcs_get_normalized_data(&rgb_raw_data, &rgb_norm_data)) {
+            if (tcs_convert_to_normalized_data(&rgb_raw_data, &rgb_norm_data) != 0) {
                 pr_err("Error converting raw data to RGB \n");
                 return -EFAULT;
             }            
             if (copy_to_user((rgb_norm_data_t *)arg, &rgb_norm_data, sizeof(rgb_norm_data_t)))
             {
                 pr_err("Error copying data to user space \n");
-                return -EACCES;
+                return -EACCES; 
             }
             break;
         default:
@@ -214,8 +246,6 @@ static long hfn_tcs_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 static struct file_operations tcs_fops =
 {
     .owner = THIS_MODULE,
-    .open = hfn_tcs_open,
-    .release = hfn_tcs_close,
     .unlocked_ioctl = hfn_tcs_ioctl
 };
 
