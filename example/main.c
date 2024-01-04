@@ -12,11 +12,13 @@ int main() {
     rgb_norm_data_t rgb_norm_data;
     int fd = open("/dev/tcs34725", O_RDWR);
 
+    // Open the char device file
     if (fd < 0) {
         perror("Failed to open the device");
         return errno;
     }
 
+    // Execute the IO operation defined in the driver header
     if (ioctl(fd, TCS_GET_RAW_COLORS, &raw_data) == -1) {
         perror("TCS_GET_RAW_COLORS failed");
         close(fd);

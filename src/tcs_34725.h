@@ -4,16 +4,16 @@
 #include <linux/ioctl.h>
 
 typedef struct {
-    int clear_data;
-    int red_data;
-    int green_data;
-    int blue_data;
+	int clear_data;
+	int red_data;
+	int green_data;
+	int blue_data;
 } rgb_raw_data_t;
 
 typedef struct {
-    unsigned char red_data;
-    unsigned char green_data;
-    unsigned char blue_data;
+	unsigned char red_data;
+	unsigned char green_data;
+	unsigned char blue_data;
 } rgb_norm_data_t;
 
 #define TCS_GET_RAW_COLORS _IOR('t', 1, rgb_raw_data_t *)
