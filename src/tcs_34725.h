@@ -4,7 +4,7 @@
 #include <linux/ioctl.h>
 
 typedef struct {
-int clear_data;
+	int clear_data;
 	int red_data;
 	int green_data;
 	int blue_data;

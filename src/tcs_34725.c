@@ -361,7 +361,7 @@ static int __init hfn_driver_init(void)
 */
 static void __exit hfn_driver_exit(void)
 {
-  i2c_unregister_device(hfn_i2c_client_tcs);
+	i2c_unregister_device(hfn_i2c_client_tcs);
 	i2c_del_driver(&hfn_tcs_driver);
 	device_destroy(cl, dev);
 	class_destroy(cl);
